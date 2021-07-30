@@ -110,7 +110,7 @@ def calc_delta_write(dyn_model, filename, time_stamp=[],  q=[], qd=[], qdd=[], g
         coriolis_vector2 = kdl.JntArray(n)
         qdd2 = kdl.JntArray(n)
         for j in range(n):
-            q2[j] = q[i][j]+qd[i][j]*4.008+0.108
+            q2[j] = q[i][j]+qd[i][j]*0.008+0.012
             qd2[j] = qd[i][j] +0.024
             qdd2[j] = (qd2[j] - qd[i][j]) / dt
         
