@@ -75,9 +75,11 @@ def write_results_to_file(filename, time_stamp=[],  q=[], qd=[], qdd=[], grav_to
             file.write("{:.18f}".format(coriolis[i][j]) + ",")
         file.write(f"\n")
     file.close()
-def calc_delta_write(filename, time_stamp=[],  q=[], qd=[], qdd=[], grav_torques=[], inertia_torques=[], coriolis=[]):
+def calc_delta_write(dyn_model, filename, time_stamp=[],  q=[], qd=[], qdd=[], grav_torques=[], inertia_torques=[], coriolis=[], dt =0.008):
+   
     size = len(time_stamp)
     n = q[0].rows()
+    
     file = open(filename, 'w')
     file.write("i,"+ "time,"+ csv_vec("d_q", n)+"," + csv_vec("d_qd", n)+"," + csv_vec("d_qdd", n)+"," + csv_vec("d_grav_trq", n)+"," + csv_vec("d_inert", n)+"," + csv_vec("d_coriolis", n)+ f"\n")
     file.write("0," + time_stamp[0].__str__() + ",")
@@ -101,24 +103,42 @@ def calc_delta_write(filename, time_stamp=[],  q=[], qd=[], qdd=[], grav_torques
     file.write(f"\n")
     
     for i in range(size):
+        q2 = kdl.JntArray(n)
+        qd2 = kdl.JntArray(n)
+        grav_torques2 = kdl.JntArray(n)
+        mass_matrix2 = kdl.JntSpaceInertiaMatrix(n)
+        coriolis_vector2 = kdl.JntArray(n)
+        qdd2 = kdl.JntArray(n)
+        for j in range(n):
+            q2[j] = q[i][j]+qd[i][j]*4.008+0.108
+            qd2[j] = qd[i][j] +0.024
+            qdd2[j] = (qd2[j] - qd[i][j]) / dt
+        
+        dyn_model.JntToGravity(q2, grav_torques2)
+        dyn_model.JntToMass(q2, mass_matrix2)
+        dyn_model.JntToCoriolis(q2, qd2, coriolis_vector2)
+        mass_vec2 = kdl.JntArray(n)
+        kdl.Multiply(mass_matrix2, qdd2, mass_vec2)
+    
+    
         file.write(i.__str__() + "," + time_stamp[i].__str__() + ",")
         for j in range(n):
-            file.write("{:.18f}".format(q[i][j] - q[i-1][j]) + ",")
+            file.write("{:.18f}".format(q[i][j] - q2[j]) + ",")
         file.write(",")
         for j in range(n):
-            file.write("{:.18f}".format(qd[i][j]-qd[i-1][j]) + ",")
+            file.write("{:.18f}".format(qd[i][j]-qd2[j]) + ",")
         file.write(",")
         for j in range(n):
-            file.write("{:.18f}".format(qdd[i][j]-qdd[i-1][j]) + ",")
+            file.write("{:.18f}".format(qdd[i][j]-qdd2[j]) + ",")
         file.write(",")
         for j in range(n):
-            file.write("{:.18f}".format(grav_torques[i][j]-grav_torques[i-1][j]) + ",")
+            file.write("{:.18f}".format(grav_torques[i][j]-grav_torques2[j]) + ",")
         file.write(",")
         for j in range(n):
-            file.write("{:.18f}".format(inertia_torques[i][j]-inertia_torques[i-1][j]) + ",")
+            file.write("{:.18f}".format(inertia_torques[i][j]-mass_vec2[j]) + ",")
         file.write(",")
         for j in range(n):
-            file.write("{:.18f}".format(coriolis[i][j]) + ",")
+            file.write("{:.18f}".format(coriolis[i][j]- coriolis_vector2[j]) + ",")
         file.write(f"\n")
 def main():
     dt = 0.008
@@ -157,5 +177,5 @@ def main():
         coriolis_vec.append(buf_coriolis_vec)
         time_stamp.append(time.time()-start_time)
     write_results_to_file("test.csv", time_stamp, q, qd, qdd, grav_torques, mass_vec, coriolis_vec)
-    calc_delta_write("delta_test.csv", time_stamp, q, qd, qdd, grav_torques, mass_vec, coriolis_vec)
+    calc_delta_write(dyn_model,"delta_test.csv", time_stamp, q, qd, qdd, grav_torques, mass_vec, coriolis_vec)
 main()
