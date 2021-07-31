@@ -35,7 +35,7 @@ def calculate_all(dyn_model, size, qd_prev, dt):
     dyn_model.JntToCoriolis(q, qd, coriolis_vector)
     qdd = kdl.JntArray(size)
     for i in range(size):
-        qdd[i] = (qd[i] - qd_prev[i]) / dt
+        qdd[i] = 0.024 / dt
     mass_vec = kdl.JntArray(size)
     kdl.Multiply(mass_matrix, qdd, mass_vec)
     
@@ -112,7 +112,7 @@ def calc_delta_write(dyn_model, filename, time_stamp=[],  q=[], qd=[], qdd=[], g
         for j in range(n):
             q2[j] = q[i][j]+qd[i][j]*0.008+0.012
             qd2[j] = qd[i][j] +0.024
-            qdd2[j] = (qd2[j] - qd[i][j]) / dt
+            qdd2[j] = 0.024 / dt
         
         dyn_model.JntToGravity(q2, grav_torques2)
         dyn_model.JntToMass(q2, mass_matrix2)
